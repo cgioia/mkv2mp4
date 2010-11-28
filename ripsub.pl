@@ -42,7 +42,7 @@ foreach ( @ARGV )
 
       # If we have an SRT file, we're done. Otherwise, ensure we have
       # an ASS file before attempting to convert it.
-      next if -e "$path$name.srt";
+      #next if -e "$path$name.srt";
       die "Unable to extract subtitle track from $_" unless -e "$path$name.ass";
 
       # Find all the lines of dialogue in the ASS script.
@@ -62,16 +62,10 @@ foreach ( @ARGV )
          my ($line) = $dialogue[$linenum - 1] =~ /^Dialogue: (.*)/;
          my @fields = split( /,/, $line, 10 );
 
-         # Format the start/end times with leading and trailing zeroes.
-         my $start = formatTimeCode( $fields[1] );
-         my $end = formatTimeCode( $fields[2] );
-
-         # A bit of cleanup on the subtitle text. Remove style override
-         # control codes ({}), and replace ASCII newlines with actual newlines.
-         my $text = cleanSubText( $fields[9] );
-
-         # Finally, print this line of dialogue to the SRT file.
-         print SRT $linenum . "\n" . "$start --> $end" . "\n" . $text . "\n\n";
+         # Output SRT-formatted line to the file.
+         print SRT $linenum . "\n" .
+                   formatTimeCode( $fields[1], $fields[2] ) . "\n" .
+                   cleanSubText( $fields[9] ) . "\n\n";
       }
 
       # Clean-up by closing the SRT file descriptor.
@@ -79,13 +73,17 @@ foreach ( @ARGV )
    }
 }
 
+# Format the start/end times with leading and trailing zeroes.
+# Split the times with the " --> " string.
 sub formatTimeCode
 {
-   my $time = shift;
-   my $ftime = sprintf( "%02d:%02d:%06.3f", split( /:/, $time, 3 ) );
-   return $ftime;
+   my $start = sprintf( "%02d:%02d:%06.3f", split( /:/, $_[0], 3 ) );
+   my $end = sprintf( "%02d:%02d:%06.3f", split( /:/, $_[1], 3 ) );
+   return "$start --> $end";
 }
 
+# A bit of cleanup on the subtitle text. Remove style override
+# control codes ({}), and replace ASCII newlines with actual newlines.
 sub cleanSubText
 {
    my $text = shift;
