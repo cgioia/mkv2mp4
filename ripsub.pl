@@ -63,13 +63,12 @@ foreach ( @ARGV )
          my @fields = split( /,/, $line, 10 );
 
          # Format the start/end times with leading and trailing zeroes.
-         my $start = sprintf( "%02d:%02d:%06.3f", split( /:/, $fields[1], 3 ) );
-         my $end = sprintf( "%02d:%02d:%06.3f", split( /:/, $fields[2], 3 ) );
+         my $start = formatTimeCode( $fields[1] );
+         my $end = formatTimeCode( $fields[2] );
 
          # A bit of cleanup on the subtitle text. Remove style override
          # control codes ({}), and replace ASCII newlines with actual newlines.
-         my $text = $fields[9];
-         foreach ( $text ) { s/\{[^\}]*}//g; s/\\[Nn]/\n/g; }
+         my $text = cleanSubText( $fields[9] );
 
          # Finally, print this line of dialogue to the SRT file.
          print SRT $linenum . "\n" . "$start --> $end" . "\n" . $text . "\n\n";
@@ -78,4 +77,22 @@ foreach ( @ARGV )
       # Clean-up by closing the SRT file descriptor.
       close SRT;
    }
+}
+
+sub formatTimeCode
+{
+   my $time = shift;
+   my $ftime = sprintf( "%02d:%02d:%06.3f", split( /:/, $time, 3 ) );
+   return $ftime;
+}
+
+sub cleanSubText
+{
+   my $text = shift;
+   foreach ( $text )
+   {
+      s/\{[^\}]*}//g;
+      s/\\[Nn]/\n/g;
+   }
+   return $text;
 }
