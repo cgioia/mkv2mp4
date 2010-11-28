@@ -24,7 +24,7 @@ foreach ( @ARGV )
       my @mkvargs = ( "mkvextract", "tracks", $_, "$track:$path$name.ass" );
 
       # Make the system call.
-      #system( @mkvargs );
+      system( @mkvargs );
 
       # Find all the lines of dialogue in the ASS script.
       # They're the only ones we need for SRT.
@@ -36,18 +36,16 @@ foreach ( @ARGV )
       # Loop over each line of dialogue.
       # Start at 1 so we can use the index in the script.
       for my $linenum ( 1 .. @dialogue ) {
-         # Need to account for the array being indexed starting at 0.
+         # Need to account for the array being indexed from 0.
          my $curline = $dialogue[$linenum - 1];
 
          # Extract all ten fields of the dialogue section
          # according to the SSA spec v4.00+.
          my ($marked, $start, $end, $style, $charname, $marginL, $marginR, $marginV, $effect, $text) = $curline =~ /^Dialogue: ([^,]*),([^,]*),([^,]*),([^,]*),([^,]*),([^,]*),([^,]*),([^,]*),([^,]*),(.*)$/;
 
-         #my ($starthr, $startmin, $startsec) = split( /:/, $start );
-         #my ($endhr, $endmin, $endsec) = split( /:/, $end );
-
-         $start = sprintf( "%02d:%02d:%02.3f", split( /:/, $start ) );
-         $end = sprintf( "%02d:%02d:%02.3f", split( /:/, $end ) );
+         # Format the times with leading/trailing zeroes.
+         $start = sprintf( "%02d:%02d:%06.3f", split( /:/, $start ) );
+         $end = sprintf( "%02d:%02d:%06.3f", split( /:/, $end ) );
 
          # A bit of cleanup on the subtitle text. Remove style override
          # control codes, and replace "\N" with actual newlines.
