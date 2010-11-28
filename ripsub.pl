@@ -35,29 +35,24 @@ foreach ( @ARGV )
 
       # Loop over each line of dialogue.
       # Start at 1 so we can use the index in the script.
-      for my $linenum ( 1 .. @dialogue ) {
-         # Need to account for the array being indexed from 0.
-         my $curline = $dialogue[$linenum - 1];
-
-         # Extract all ten fields of the dialogue section
-         # according to the SSA spec v4.00+.
-         my ($marked, $start, $end, $style, $charname, $marginL, $marginR, $marginV, $effect, $text) = $curline =~ /^Dialogue: ([^,]*),([^,]*),([^,]*),([^,]*),([^,]*),([^,]*),([^,]*),([^,]*),([^,]*),(.*)$/;
+      for my $linenum ( 1 .. @dialogue )
+      {
+         # Grab the interesting part of the line: the ten comma-separated
+         # fields defined in the SSA spec (v4.00+). For reference, see:
+         # http://www.matroska.org/technical/specs/subtitles/ssa.html
+         my ($line) = $dialogue[$linenum - 1] =~ /^Dialogue: (.*)/;
+         my @fields = split( /,/, $line, 10 );
 
          # Format the times with leading/trailing zeroes.
-         $start = sprintf( "%02d:%02d:%06.3f", split( /:/, $start ) );
-         $end = sprintf( "%02d:%02d:%06.3f", split( /:/, $end ) );
+         my $start = sprintf( "%02d:%02d:%06.3f", split( /:/, $fields[1], 3 ) );
+         my $end = sprintf( "%02d:%02d:%06.3f", split( /:/, $fields[2], 3 ) );
 
          # A bit of cleanup on the subtitle text. Remove style override
-         # control codes, and replace "\N" with actual newlines.
-         foreach ( $text ) {
-            s/\{[^\}]*}//g;
-            s/\\[Nn]/\n/g;
-         }
+         # control codes ({}), and replace ASCII newlines with actual newlines.
+         my $text = $fields[9];
+         foreach ( $text ) { s/\{[^\}]*}//g; s/\\[Nn]/\n/g; }
 
-         # Remove any trailing newlines.
-         chomp ($linenum, $start, $end, $text);
-
-         # Print this line of dialogue to the SRT file.
+         # Finally, print this line of dialogue to the SRT file.
          print SRT $linenum . "\n" . "$start --> $end" . "\n" . $text . "\n\n";
       }
 
