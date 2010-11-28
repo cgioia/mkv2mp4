@@ -1,6 +1,9 @@
 #!/usr/bin/env perl
 # Name: ripsub
 # Author: Chad Gioia <cgioia@gmail.com>
+# Description: Extracts SRT or SSA/ASS subtitle tracks from Matroska media
+#              containers. Converts SSA/ASS to SRT if necessary.
+################################################################################
 use strict;
 use warnings;
 use File::Basename;
@@ -42,8 +45,8 @@ foreach ( @ARGV )
       # Make the system call.
       system( @mkvargs );
 
-      # If we have an SRT file, we're done.
-      next if -e "$path$name.srt";
+      # If we have the SRT file, we're done.
+      next if -e "$srtfile";
 
       # If we're here, we need to convert the ASS script to SRT.
       # Open the ASS file for reading, and the SRT file for writing.
