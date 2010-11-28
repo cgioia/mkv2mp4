@@ -4,7 +4,6 @@
 use strict;
 use warnings;
 use File::Basename;
-use File::Slurp;
 
 # Set our locale to Canada (French) so the decimal separator will be a comma.
 use POSIX;
@@ -12,8 +11,11 @@ setlocale( LC_NUMERIC, "fr_CA" );
 
 foreach ( @ARGV )
 {
-   # Get the name, path, and the suffix of the file.
+   # Get the name, path, and the suffix of the file. Use this to
+   # create the names for the ASS and SRT files.
    my ($name, $path, $suffix) = fileparse( $_, qr/\.[^.]*/ );
+   my $assfile = "$path$name.ass";
+   my $srtfile = "$path$name.srt";
 
    # Only operate on Matroska video or subtitle containers.
    if ( $suffix =~ /^\.mk[vs]$/ )
@@ -26,11 +28,11 @@ foreach ( @ARGV )
       my $info = `mkvmerge --identify "$_"`;
       if ( $info =~ /Track ID (\d+): subtitles \(S_TEXT\/UTF8\)/ )
       {
-         push( @mkvargs, "$1:$path$name.srt" );
+         push( @mkvargs, "$1:$srtfile" );
       }
       elsif ( $info =~ /Track ID (\d+): subtitles \(S_TEXT\/ASS\)/ )
       {
-         push( @mkvargs, "$1:$path$name.ass" );
+         push( @mkvargs, "$1:$assfile" );
       }
       else
       {
@@ -40,41 +42,59 @@ foreach ( @ARGV )
       # Make the system call.
       system( @mkvargs );
 
-      # If we have an SRT file, we're done. Otherwise, ensure we have
-      # an ASS file before attempting to convert it.
-      #next if -e "$path$name.srt";
-      die "Unable to extract subtitle track from $_" unless -e "$path$name.ass";
+      # If we have an SRT file, we're done.
+      next if -e "$path$name.srt";
 
-      # Find all the lines of dialogue in the ASS script.
-      # They're the only ones we need for SRT.
-      my @dialogue = grep { /^Dialogue:/ } read_file( "$path$name.ass" );
+      # If we're here, we need to convert the ASS script to SRT.
+      # Open the ASS file for reading, and the SRT file for writing.
+      open ASS, "<$assfile" or die $!;
+      open SRT, ">$srtfile" or die $!;
 
-      # Create the SRT file with the same name.
-      open SRT, ">$path$name.srt" or die $!;
+      # Hash to store the lines of dialogue for the SRT script.
+      my %srtlines;
 
-      # Loop over each line of dialogue.
-      # Start at 1 so we can use the index in the script.
-      for my $linenum ( 1 .. @dialogue )
+      # Read in each line of the ASS file.
+      while ( <ASS> )
       {
-         # Grab the interesting part of the line: the ten comma-separated
+         # Grab the interesting part of the dialogue: the ten comma-separated
          # fields defined in the SSA spec (v4.00+). For reference, see:
          # http://www.matroska.org/technical/specs/subtitles/ssa.html
-         my ($line) = $dialogue[$linenum - 1] =~ /^Dialogue: (.*)/;
-         my @fields = split( /,/, $line, 10 );
+         if ( $_ =~ /^Dialogue: (.*)/ )
+         {
+            my @fields = split( /,/, $1, 10 );
 
-         # Output SRT-formatted line to the file.
-         print SRT $linenum . "\n" .
-                   formatTimeCode( $fields[1], $fields[2] ) . "\n" .
-                   cleanSubText( $fields[9] ) . "\n\n";
+            # Format the start and end times in an SRT format.
+            my $timecode = formatTimeCode( $fields[1], $fields[2] );
+
+            # Clean-up the subtitle text for SRT. Skip it if it turns out empty.
+            my $text = cleanSubText( $fields[9] );
+            next if $text eq "";
+
+            # Store the text in a hash, using the timecode as the key. If
+            # there is a duplicate timecode, we'll append the next line.
+            $srtlines{$timecode} .= $text . "\n";
+         }
       }
 
-      # Clean-up by closing the SRT file descriptor.
+      # Write the script to the SRT file, sorted by the timecode (key).
+      my $count = 1;
+      foreach my $key ( sort keys %srtlines )
+      {
+         print SRT $count++ . "\n" . $key . "\n" . $srtlines{$key} . "\n";
+      }
+
+      # Clean-up by closing the SRT and ASS file descriptors.
       close SRT;
+      close ASS;
    }
 }
 
-# Format the start/end times with leading and trailing zeroes.
-# Split the times with the " --> " string.
+################################################################################
+# Subroutine:  formatTimeCode( $start, end )
+# Description: Format the start/end times with leading and trailing zeroes,
+#              then split the times with the " --> " string as required by SRT.
+# Return:      the formatted timecode
+################################################################################
 sub formatTimeCode
 {
    my $start = sprintf( "%02d:%02d:%06.3f", split( /:/, $_[0], 3 ) );
@@ -82,8 +102,12 @@ sub formatTimeCode
    return "$start --> $end";
 }
 
-# A bit of cleanup on the subtitle text. Remove style override
-# control codes ({}), and replace ASCII newlines with actual newlines.
+################################################################################
+# Subroutine:  cleanSubText( $text )
+# Description: Do some cleanup on the subtitle text. Remove SSA style override
+#              control codes, and replace ASCII newlines with actual newlines.
+# Return:      the cleaned subtitle text
+################################################################################
 sub cleanSubText
 {
    my $text = shift;
