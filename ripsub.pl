@@ -17,7 +17,7 @@ foreach ( @ARGV )
    if ( $suffix =~ /^\.mk[vs]$/ )
    {
       # Construct the system call to extract the subtitle track.
-      my @mkvargs = ( "mkvextract", "tracks", $_, );
+      my @mkvargs = ( "mkvextract", "tracks", $_ );
 
       # Find the track ID for the subtitles. If SRT subtitles are present,
       # excellent! If not, there's probably some SSA/ASS subtitles we can use.
