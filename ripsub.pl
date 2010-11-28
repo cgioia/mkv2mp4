@@ -34,7 +34,7 @@ foreach ( @ARGV )
       }
       else
       {
-         die "Could not find subtitle track!";
+         die "Could not find subtitle track in $_";
       }
 
       # Make the system call.
@@ -43,7 +43,7 @@ foreach ( @ARGV )
       # If we have an SRT file, we're done. Otherwise, ensure we have
       # an ASS file before attempting to convert it.
       next if -e "$path$name.srt";
-      die "Unable to extract subtitle track!" unless -e "$path$name.ass";
+      die "Unable to extract subtitle track from $_" unless -e "$path$name.ass";
 
       # Find all the lines of dialogue in the ASS script.
       # They're the only ones we need for SRT.
@@ -62,7 +62,7 @@ foreach ( @ARGV )
          my ($line) = $dialogue[$linenum - 1] =~ /^Dialogue: (.*)/;
          my @fields = split( /,/, $line, 10 );
 
-         # Format the times with leading/trailing zeroes.
+         # Format the start/end times with leading and trailing zeroes.
          my $start = sprintf( "%02d:%02d:%06.3f", split( /:/, $fields[1], 3 ) );
          my $end = sprintf( "%02d:%02d:%06.3f", split( /:/, $fields[2], 3 ) );
 
