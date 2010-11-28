@@ -16,12 +16,24 @@ foreach ( @ARGV )
    # Only operate on Matroska video or subtitle containers.
    if ( $suffix =~ /^\.mk[vs]$/ )
    {
-      # Find the track ID for the ASS subtitles.
-      my $info = `mkvmerge --identify "$_"`;
-      my ($track) = $info =~ /Track ID (\d+): subtitles \(S_TEXT\/ASS\)/;
-
       # Construct the system call to extract the subtitle track.
-      my @mkvargs = ( "mkvextract", "tracks", $_, "$track:$path$name.ass" );
+      my @mkvargs = ( "mkvextract", "tracks", $_, );
+
+      # Find the track ID for the subtitles. If SRT subtitles are present,
+      # excellent! If not, there's probably some SSA/ASS subtitles we can use.
+      my $track;
+      my $info = `mkvmerge --identify "$_"`;
+      if ( ($track) = $info =~ /Track ID (\d+): subtitles \(S_TEXT\/UTF8\)/ )
+      {
+         push( @mkvargs, "$track:$path$name.srt" );
+      }
+      elsif ( ($track) = $info =~ /Track ID (\d+): subtitles \(S_TEXT\/ASS\)/ )
+      {
+         push( @mkvargs, "$track:$path$name.ass" );
+      }
+
+      # No subtitle track found, bail out now!
+      die "Could not find subtitle track" unless defined $track;
 
       # Make the system call.
       system( @mkvargs );
