@@ -17,19 +17,28 @@ foreach ( @ARGV )
       my ($track) = $info =~ /Track ID (\d+): subtitles \(S_TEXT\/ASS\)/;
 
       # Construct the system call to extract the subtitle track.
-      my @mkvargs = ( "mkvextract", "tracks", $_, "$track:$path$name.ass" );
+      my $assname = "$path$name.ass";
+      my @mkvargs = ( "mkvextract", "tracks", $_, "$track:$assname" );
 
       # Make the system call.
       #system( @mkvargs );
 
-      my @ass = read_file( "$path$name.ass" );
-      my @dialogue = grep { /^Dialogue:/ } @ass;
+      #my @ass = read_file( "$path$name.ass" );
+      #my @dialogue = grep { /^Dialogue:/ } @ass;
+      my @dialogue = grep { /^Dialogue:/ } read_file( "$assname" );
+
+      open SRT, ">$path$name.srt" or die $!;
 
       for my $linenum ( 1 .. @dialogue ) {
-         #print "$linenum\n";
          my $curline = $dialogue[$linenum - 1];
-         my ($marked, $start, $end, $style, $dname, $marginL, $marginR, $marginV, $effect, $text) = $curline =~ /^Dialogue: ([^,]*),([^,]*),([^,]*),([^,]*),([^,]*),([^,]*),([^,]*),([^,]*),([^,]*),(.*)$/;
-         print $linenum . "\n" . $start . " --> " . $end . "\n" . $text . "\n\n";
+         my ($marked, $start, $end, $style, $charname, $marginL, $marginR, $marginV, $effect, $text) = $curline =~ /^Dialogue: ([^,]*),([^,]*),([^,]*),([^,]*),([^,]*),([^,]*),([^,]*),([^,]*),([^,]*),(.*)$/;
+         foreach ( $text ) {
+            s/\{[^\}]*}//g;
+            s/\\[Nn]/\n/g;
+         }
+         print SRT $linenum . "\n" . "$start --> $end" . "\n" . $text . "\n\n";
       }
+
+      close SRT;
    }
 }
