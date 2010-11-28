@@ -1,10 +1,12 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
+# Name: ripsub
+# Author: Chad Gioia <cgioia@gmail.com>
 use strict;
 use warnings;
 use File::Basename;
 use File::Slurp;
 
-# Set our locale to Canada (French) so our decimal separator will be a comma.
+# Set our locale to Canada (French) so the decimal separator will be a comma.
 use POSIX;
 setlocale( LC_NUMERIC, "fr_CA" );
 
@@ -21,22 +23,27 @@ foreach ( @ARGV )
 
       # Find the track ID for the subtitles. If SRT subtitles are present,
       # excellent! If not, there's probably some SSA/ASS subtitles we can use.
-      my $track;
       my $info = `mkvmerge --identify "$_"`;
-      if ( ($track) = $info =~ /Track ID (\d+): subtitles \(S_TEXT\/UTF8\)/ )
+      if ( $info =~ /Track ID (\d+): subtitles \(S_TEXT\/UTF8\)/ )
       {
-         push( @mkvargs, "$track:$path$name.srt" );
+         push( @mkvargs, "$1:$path$name.srt" );
       }
-      elsif ( ($track) = $info =~ /Track ID (\d+): subtitles \(S_TEXT\/ASS\)/ )
+      elsif ( $info =~ /Track ID (\d+): subtitles \(S_TEXT\/ASS\)/ )
       {
-         push( @mkvargs, "$track:$path$name.ass" );
+         push( @mkvargs, "$1:$path$name.ass" );
       }
-
-      # No subtitle track found, bail out now!
-      die "Could not find subtitle track" unless defined $track;
+      else
+      {
+         die "Could not find subtitle track!";
+      }
 
       # Make the system call.
       system( @mkvargs );
+
+      # If we have an SRT file, we're done. Otherwise, ensure we have
+      # an ASS file before attempting to convert it.
+      next if -e "$path$name.srt";
+      die "Unable to extract subtitle track!" unless -e "$path$name.ass";
 
       # Find all the lines of dialogue in the ASS script.
       # They're the only ones we need for SRT.
