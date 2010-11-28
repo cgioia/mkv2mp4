@@ -2,6 +2,7 @@
 use strict;
 use warnings;
 use File::Basename;
+use File::Slurp;
 
 foreach ( @ARGV )
 {
@@ -19,6 +20,16 @@ foreach ( @ARGV )
       my @mkvargs = ( "mkvextract", "tracks", $_, "$track:$path$name.ass" );
 
       # Make the system call.
-      system( @mkvargs );
+      #system( @mkvargs );
+
+      my @ass = read_file( "$path$name.ass" );
+      my @dialogue = grep { /^Dialogue:/ } @ass;
+
+      for my $linenum ( 1 .. @dialogue ) {
+         #print "$linenum\n";
+         my $curline = $dialogue[$linenum - 1];
+         my ($marked, $start, $end, $style, $dname, $marginL, $marginR, $marginV, $effect, $text) = $curline =~ /^Dialogue: ([^,]*),([^,]*),([^,]*),([^,]*),([^,]*),([^,]*),([^,]*),([^,]*),([^,]*),(.*)$/;
+         print $linenum . "\n" . $start . " --> " . $end . "\n" . $text . "\n\n";
+      }
    }
 }
