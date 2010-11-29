@@ -49,12 +49,12 @@ foreach ( @ARGV )
       next if -e "$srtfile";
 
       # If we're here, we need to convert the ASS script to SRT.
+      # We'll need a hash to store the lines of dialogue for the SRT script.
+      my %srtlines;
+
       # Open the ASS file for reading, and the SRT file for writing.
       open ASS, "<$assfile" or die $!;
       open SRT, ">$srtfile" or die $!;
-
-      # Hash to store the lines of dialogue for the SRT script.
-      my %srtlines;
 
       # Read in each line of the ASS file.
       while ( <ASS> )
@@ -73,8 +73,8 @@ foreach ( @ARGV )
             my $text = cleanSubText( $fields[9] );
             next if $text eq "";
 
-            # Store the text in a hash, using the timecode as the key. If
-            # there is a duplicate timecode, we'll append the next line.
+            # Store the text in the hash, using the timecode as the key. If
+            # there is a duplicate timecode, we'll append on the next line.
             $srtlines{$timecode} .= $text . "\n";
          }
       }
@@ -93,7 +93,7 @@ foreach ( @ARGV )
 }
 
 ################################################################################
-# Subroutine:  formatTimeCode( $start, end )
+# Subroutine:  formatTimeCode( $start, $end )
 # Description: Format the start/end times with leading and trailing zeroes,
 #              then split the times with the " --> " string as required by SRT.
 # Return:      the formatted timecode
@@ -109,6 +109,7 @@ sub formatTimeCode
 # Subroutine:  cleanSubText( $text )
 # Description: Do some cleanup on the subtitle text. Remove SSA style override
 #              control codes, and replace ASCII newlines with actual newlines.
+#              Maybe someday we can also insert SRT styles where applicable.
 # Return:      the cleaned subtitle text
 ################################################################################
 sub cleanSubText
@@ -116,8 +117,8 @@ sub cleanSubText
    my $text = shift;
    foreach ( $text )
    {
-      s/\{[^\}]*}//g;
-      s/\\[Nn]/\n/g;
+      s/\{[^\}]*}//g; # Remove the codes (everything inside {}'s)
+      s/\\[Nn]/\n/g;  # Add newlines where called for in the script
    }
    return $text;
 }
