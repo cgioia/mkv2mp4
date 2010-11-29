@@ -16,37 +16,39 @@ foreach ( @ARGV )
 {
    # Get the name, path, and the suffix of the file. Use this to
    # create the names for the ASS and SRT files.
-   my ($name, $path, $suffix) = fileparse( $_, qr/\.[^.]*/ );
+   my $mkvfile = shift;
+   my ($name, $path, $suffix) = fileparse( $mkvfile, qr/\.[^.]*/ );
    my $assfile = "$path$name.ass";
    my $srtfile = "$path$name.srt";
+   my $convfile = "$path$name.m4v";
 
-   # Only operate on Matroska video or subtitle containers.
-   if ( $suffix =~ /^\.mk[vs]$/ )
+   # Only operate on Matroska video containers.
+   if ( $suffix eq ".mkv" )
    {
       # Construct the system call to extract the subtitle track.
-      my @mkvargs = ( "mkvextract", "tracks", $_ );
+      my @mkvargs = ( "mkvextract", "tracks", $mkvfile );
 
       # Find the track ID for the subtitles. If SRT subtitles are present,
       # excellent! If not, there's probably some SSA/ASS subtitles we can use.
-      my $info = `mkvmerge --identify "$_"`;
-      if ( $info =~ /Track ID (\d+): subtitles \(S_TEXT\/UTF8\)/ )
-      {
-         push( @mkvargs, "$1:$srtfile" );
-      }
-      elsif ( $info =~ /Track ID (\d+): subtitles \(S_TEXT\/ASS\)/ )
+      my $info = `mkvmerge --identify "$mkvfile"`;
+      #if ( $info =~ /Track ID (\d+): subtitles \(S_TEXT\/UTF8\)/ )
+      #{
+      #   push( @mkvargs, "$1:$srtfile" );
+      #}
+      if ( $info =~ /Track ID (\d+): subtitles \(S_TEXT\/ASS\)/ )
       {
          push( @mkvargs, "$1:$assfile" );
       }
       else
       {
-         die "Could not find subtitle track in $_";
+         die "Could not find subtitle track in $mkvfile";
       }
 
       # Make the system call.
       system( @mkvargs );
 
       # If we have the SRT file, we're done.
-      next if -e "$srtfile";
+      #next if -e "$srtfile";
 
       # If we're here, we need to convert the ASS script to SRT.
       # We'll need a hash to store the lines of dialogue for the SRT script.
@@ -89,6 +91,14 @@ foreach ( @ARGV )
       # Clean-up by closing the SRT and ASS file descriptors.
       close SRT;
       close ASS;
+
+      # Convert the file to an iPad-compliant format
+      system( "HandbrakeCLI -i $mkvfile -o $convfile --preset=\"AppleTV\"" );
+
+      # Now mux in our SRT file.
+      system( "SublerCLI -i $convfile -s $srtfile" );
+
+      unlink( $assfile, $srtfile );
    }
 }
 
