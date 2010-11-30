@@ -1,5 +1,5 @@
 #!/usr/bin/env perl
-# Name: ripsub
+# Name: mkv2mp4
 # Author: Chad Gioia <cgioia@gmail.com>
 # Description: Converts a Matroska video to MP4, and muxes in the subtitles.
 ################################################################################
@@ -30,15 +30,10 @@ foreach ( @ARGV )
       next;
    }
 
-   # Extract the subtitle track from the Matroska container.
+   # If the Matroska video container has a subtitle track,
+   # extract it and mux it into the converted MP4 file.
    my $subfile = extractSubtitles( $mkvfile );
-   unless ( -e $subfile )
-   {
-      print STDERR "Unable to extract subtitles from $mkvfile!\n";
-      next;
-   }
-
-   # Finally, mux the subtitles into the MP4 file and clean up.
+   unless ( defined $subfile and -e $subfile ) { next; }
    muxSubtitles( $mp4file, $subfile );
    unlink( $subfile );
 }
@@ -52,31 +47,33 @@ sub extractSubtitles
 {
    my $mkvfile = shift;
    my $srtfile = undef;
+
+   # Only operate on Matroska video files.
    if ( $mkvfile =~ /\.mkv$/ )
    {
       # Get the metadata information from this MKV file.
       my $info = `mkvmerge --identify "$mkvfile"`;
 
-      # Look for the SRT track. If there is none, fallback to the SSA/ASS track.
+      # Look for the SRT track.
       if ( $info =~ /Track ID (\d+): subtitles \(S_TEXT\/UTF8\)/ )
       {
          # Create a temporary file name for the SRT script and extract.
          $srtfile = tmpnam() . ".srt";
          system( "mkvextract tracks $mkvfile $1:$srtfile" );
       }
+      # SRT track wasn't found, so look for an SSA/ASS track.
       elsif ( $info =~ /Track ID (\d+): subtitles \(S_TEXT\/ASS\)/ )
       {
          # Create a temporary file name for the ASS script and extract.
          my $assfile = tmpnam() . ".ass";
          system( "mkvextract tracks $mkvfile $1:$assfile" );
 
-         # Convert the ASS script to SRT.
+         # Convert the ASS script to SRT, and delete the unnecessary file.
          $srtfile = convertASSToSRT( $assfile );
-         
-         # Clean up the ASS file.
          unlink( $assfile );
       }
    }
+
    return $srtfile;
 }
 
@@ -89,6 +86,8 @@ sub convertASSToSRT
 {
    my $assfile = shift;
    my $srtfile = undef;
+
+   # Only operate on ASS subtitle files.
    if ( $assfile =~ /\.ass$/ )
    {
       # Create a temporary file name for the SRT script.
@@ -136,6 +135,7 @@ sub convertASSToSRT
       close ASS;
       close SRT;
    }
+
    return $srtfile;
 }
 
@@ -178,16 +178,17 @@ sub formatTimeCode
 # Subroutine:  cleanSubText( $text )
 # Description: Do some cleanup on the subtitle text. Remove SSA style override
 #              control codes, and replace ASCII newlines with actual newlines.
-#              Maybe someday we can also insert SRT styles where applicable.
 # Return:      the cleaned subtitle text
 ################################################################################
 sub cleanSubText
 {
    my $text = shift;
+
    foreach ( $text )
    {
       s/\{[^\}]*}//g; # Remove the codes (everything inside {}'s)
       s/\\[Nn]/\n/g;  # Add newlines where called for in the script
    }
+
    return $text;
 }
