@@ -1,0 +1,16 @@
+mkv2mp4
+=======
+Chad Gioia <cgioia@gmail.com>
+
+Description
+-----------
+This is a utility to convert Matroska video (MKV) to MP4 (M4V),
+ostensibly for viewing on an AppleTV or an Apple iPad, using Handbrake.
+
+The real magic comes in the form of extracting an SSA/ASS subtitle track from the Matroska container, converting it to a format accepted by MP4 (SRT-style subtitles), and muxing it in to the newly converted file.
+
+Prerequisites
+-------------
+HandbrakeCLI - http://handbrake.fr/
+SublerCLI - http://code.google.com/p/subler/
+mkvtoolnix - http://www.bunkus.org/videotools/mkvtoolnix/
