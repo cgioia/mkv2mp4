@@ -1,8 +1,7 @@
 #!/usr/bin/env perl
 # Name: ripsub
 # Author: Chad Gioia <cgioia@gmail.com>
-# Description: Extracts SRT or SSA/ASS subtitle tracks from Matroska media
-#              containers. Converts SSA/ASS to SRT if necessary.
+# Description: Converts a Matroska video to MP4, and muxes in the subtitles.
 ################################################################################
 use strict;
 use warnings;
@@ -14,12 +13,15 @@ setlocale( LC_NUMERIC, "fr_CA" );
 
 foreach ( @ARGV )
 {
+   # Make sure we were passed a readable file.
    my $mkvfile = $_;
    next unless -e $mkvfile;
 
+   # Now make sure it's a Matroska video before continuing.
    my ($name, $path, $suffix) = fileparse( $mkvfile, qr/\.[^.]*/ );
    next unless $suffix eq ".mkv";
 
+   # Use HandbrakeCLI to convert the MKV to MP4 using the AppleTV preset.
    my $mp4file = "$path$name.m4v";
    convertVideo( $mkvfile, $mp4file, "AppleTV" );
    unless ( -e $mp4file )
@@ -28,6 +30,7 @@ foreach ( @ARGV )
       next;
    }
 
+   # Extract the subtitle track from the Matroska container.
    my $subfile = extractSubtitles( $mkvfile );
    unless ( -e $subfile )
    {
@@ -35,6 +38,7 @@ foreach ( @ARGV )
       next;
    }
 
+   # Finally, mux the subtitles into the MP4 file and clean up.
    muxSubtitles( $mp4file, $subfile );
    unlink( $subfile );
 }
@@ -50,17 +54,26 @@ sub extractSubtitles
    my $srtfile = undef;
    if ( $mkvfile =~ /\.mkv$/ )
    {
+      # Get the metadata information from this MKV file.
       my $info = `mkvmerge --identify "$mkvfile"`;
+
+      # Look for the SRT track. If there is none, fallback to the SSA/ASS track.
       if ( $info =~ /Track ID (\d+): subtitles \(S_TEXT\/UTF8\)/ )
       {
+         # Create a temporary file name for the SRT script and extract.
          $srtfile = tmpnam() . ".srt";
          system( "mkvextract tracks $mkvfile $1:$srtfile" );
       }
       elsif ( $info =~ /Track ID (\d+): subtitles \(S_TEXT\/ASS\)/ )
       {
+         # Create a temporary file name for the ASS script and extract.
          my $assfile = tmpnam() . ".ass";
          system( "mkvextract tracks $mkvfile $1:$assfile" );
+
+         # Convert the ASS script to SRT.
          $srtfile = convertASSToSRT( $assfile );
+         
+         # Clean up the ASS file.
          unlink( $assfile );
       }
    }
@@ -78,19 +91,25 @@ sub convertASSToSRT
    my $srtfile = undef;
    if ( $assfile =~ /\.ass$/ )
    {
+      # Create a temporary file name for the SRT script.
       $srtfile = tmpnam() . ".srt";
 
+      # Define a hash to hold the SRT script while we're reading the ASS file.
+      my %srtlines = ();
+
+      # Open the ASS and SRT files for reading and writing, respectively.
       open ASS, "<$assfile" or die $!;
       open SRT, ">$srtfile" or die $!;
 
-      my %srtlines;
+      # Read the entire ASS file.
       while ( <ASS> )
       {
-         # Grab the interesting part of the dialogue: the ten comma-separated
-         # fields defined in the SSA spec (v4.00+). For reference, see:
-         # http://www.matroska.org/technical/specs/subtitles/ssa.html
+         # We're only interested in the SSA dialogue lines for the SRT script.
          if ( $_ =~ /^Dialogue: (.*)/ )
          {
+            # Grab the interesting part of the dialogue: the ten comma-separated
+            # fields defined in the SSA spec (v4.00+). For reference, see:
+            # http://www.matroska.org/technical/specs/subtitles/ssa.html
             my @fields = split( /,/, $1, 10 );
 
             # Format the start and end times in an SRT format.
@@ -113,9 +132,9 @@ sub convertASSToSRT
          print SRT $count++ . "\n" . $key . "\n" . $srtlines{$key} . "\n";
       }
 
-      # Clean-up by closing the SRT and ASS file descriptors.
-      close SRT;
+      # Clean up by closing the ASS and SRT file descriptors.
       close ASS;
+      close SRT;
    }
    return $srtfile;
 }
