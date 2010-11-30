@@ -6,59 +6,84 @@
 ################################################################################
 use strict;
 use warnings;
+use POSIX;
 use File::Basename;
 
 # Set our locale to Canada (French) so the decimal separator will be a comma.
-use POSIX;
 setlocale( LC_NUMERIC, "fr_CA" );
 
 foreach ( @ARGV )
 {
-   # Get the name, path, and the suffix of the file. Use this to
-   # create the names for the ASS and SRT files.
-   my $mkvfile = shift;
+   my $mkvfile = $_;
+   next unless -e $mkvfile;
+
    my ($name, $path, $suffix) = fileparse( $mkvfile, qr/\.[^.]*/ );
-   my $assfile = "$path$name.ass";
-   my $srtfile = "$path$name.srt";
-   my $convfile = "$path$name.m4v";
+   next unless $suffix eq ".mkv";
 
-   # Only operate on Matroska video containers.
-   if ( $suffix eq ".mkv" )
+   my $mp4file = "$path$name.m4v";
+   convertVideo( $mkvfile, $mp4file, "AppleTV" );
+   unless ( -e $mp4file )
    {
-      # Construct the system call to extract the subtitle track.
-      my @mkvargs = ( "mkvextract", "tracks", $mkvfile );
+      print STDERR "Unable to convert $mkvfile!\n";
+      next;
+   }
 
-      # Find the track ID for the subtitles. If SRT subtitles are present,
-      # excellent! If not, there's probably some SSA/ASS subtitles we can use.
+   my $subfile = extractSubtitles( $mkvfile );
+   unless ( -e $subfile )
+   {
+      print STDERR "Unable to extract subtitles from $mkvfile!\n";
+      next;
+   }
+
+   muxSubtitles( $mp4file, $subfile );
+   unlink( $subfile );
+}
+
+################################################################################
+# Subroutine:  extractSubtitles( $mkvfile )
+# Description: Extract SRT subtitles from a Matroska video container.
+# Return:      name of the SRT file
+################################################################################
+sub extractSubtitles
+{
+   my $mkvfile = shift;
+   my $srtfile = undef;
+   if ( $mkvfile =~ /\.mkv$/ )
+   {
       my $info = `mkvmerge --identify "$mkvfile"`;
-      #if ( $info =~ /Track ID (\d+): subtitles \(S_TEXT\/UTF8\)/ )
-      #{
-      #   push( @mkvargs, "$1:$srtfile" );
-      #}
-      if ( $info =~ /Track ID (\d+): subtitles \(S_TEXT\/ASS\)/ )
+      if ( $info =~ /Track ID (\d+): subtitles \(S_TEXT\/UTF8\)/ )
       {
-         push( @mkvargs, "$1:$assfile" );
+         $srtfile = tmpnam() . ".srt";
+         system( "mkvextract tracks $mkvfile $1:$srtfile" );
       }
-      else
+      elsif ( $info =~ /Track ID (\d+): subtitles \(S_TEXT\/ASS\)/ )
       {
-         die "Could not find subtitle track in $mkvfile";
+         my $assfile = tmpnam() . ".ass";
+         system( "mkvextract tracks $mkvfile $1:$assfile" );
+         $srtfile = convertASSToSRT( $assfile );
+         unlink( $assfile );
       }
+   }
+   return $srtfile;
+}
 
-      # Make the system call.
-      system( @mkvargs );
+################################################################################
+# Subroutine:  convertASSToSRT( $assfile )
+# Description: Convert SSA/ASS subtitles to the SRT format
+# Return:      name of the SRT file
+################################################################################
+sub convertASSToSRT
+{
+   my $assfile = shift;
+   my $srtfile = undef;
+   if ( $assfile =~ /\.ass$/ )
+   {
+      $srtfile = tmpnam() . ".srt";
 
-      # If we have the SRT file, we're done.
-      #next if -e "$srtfile";
-
-      # If we're here, we need to convert the ASS script to SRT.
-      # We'll need a hash to store the lines of dialogue for the SRT script.
-      my %srtlines;
-
-      # Open the ASS file for reading, and the SRT file for writing.
       open ASS, "<$assfile" or die $!;
       open SRT, ">$srtfile" or die $!;
 
-      # Read in each line of the ASS file.
+      my %srtlines;
       while ( <ASS> )
       {
          # Grab the interesting part of the dialogue: the ten comma-separated
@@ -91,15 +116,30 @@ foreach ( @ARGV )
       # Clean-up by closing the SRT and ASS file descriptors.
       close SRT;
       close ASS;
-
-      # Convert the file to an iPad-compliant format
-      system( "HandbrakeCLI -i $mkvfile -o $convfile --preset=\"AppleTV\"" );
-
-      # Now mux in our SRT file.
-      system( "SublerCLI -i $convfile -s $srtfile" );
-
-      unlink( $assfile, $srtfile );
    }
+   return $srtfile;
+}
+
+################################################################################
+# Subroutine:  muxSubtitles( $inputfile, $srtfile )
+# Description: Mux an SRT subtitle script into the given MP4 file.
+# Return:      nothing
+################################################################################
+sub muxSubtitles
+{
+   my ($inputfile, $srtfile) = @_;
+   system( "SublerCLI -i $inputfile -s $srtfile" );
+}
+
+################################################################################
+# Subroutine:  convertVideo( $inputfile, $outputfile, $preset )
+# Description: Convert the given input using the specified preset.
+# Return:      nothing
+################################################################################
+sub convertVideo
+{
+   my ($inputfile, $outputfile, $preset) = @_;
+   system( "HandbrakeCLI -i $inputfile -o $outputfile --preset=\"$preset\"" );
 }
 
 ################################################################################
