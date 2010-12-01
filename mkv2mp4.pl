@@ -59,14 +59,16 @@ sub extractSubtitles
       {
          # Create a temporary file name for the SRT script and extract.
          $srtfile = tmpnam() . ".srt";
-         system( "mkvextract tracks $mkvfile $1:$srtfile" );
+         print "Extracting SRT subtitles from $mkvfile.\n";
+         system( "mkvextract tracks \"$mkvfile\" \"$1:$srtfile\" > /dev/null" );
       }
       # SRT track wasn't found, so look for an SSA/ASS track.
       elsif ( $info =~ /Track ID (\d+): subtitles \(S_TEXT\/ASS\)/ )
       {
          # Create a temporary file name for the ASS script and extract.
          my $assfile = tmpnam() . ".ass";
-         system( "mkvextract tracks $mkvfile $1:$assfile" );
+         print "Extracting SSA/ASS subtitles from $mkvfile.\n";
+         system( "mkvextract tracks \"$mkvfile\" \"$1:$assfile\" > /dev/null" );
 
          # Convert the ASS script to SRT, and delete the unnecessary file.
          $srtfile = convertASSToSRT( $assfile );
@@ -90,6 +92,8 @@ sub convertASSToSRT
    # Only operate on ASS subtitle files.
    if ( $assfile =~ /\.ass$/ )
    {
+      print "Converting SSA/ASS subtitles to SRT format.\n";
+
       # Create a temporary file name for the SRT script.
       $srtfile = tmpnam() . ".srt";
 
@@ -147,7 +151,8 @@ sub convertASSToSRT
 sub muxSubtitles
 {
    my ($inputfile, $srtfile) = @_;
-   system( "SublerCLI -i $inputfile -s $srtfile" );
+   print "Muxing subtitles into $inputfile.\n";
+   system( "SublerCLI -i \"$inputfile\" -s \"$srtfile\"" );
 }
 
 ################################################################################
@@ -158,7 +163,10 @@ sub muxSubtitles
 sub convertVideo
 {
    my ($inputfile, $outputfile, $preset) = @_;
-   system( "HandbrakeCLI -i $inputfile -o $outputfile --preset=\"$preset\"" );
+
+   # Handbrake likes to put a lot of junk out to STDERR. Do not want.
+   print "Converting $inputfile to $outputfile.\n";
+   system( "HandbrakeCLI -i \"$inputfile\" -o \"$outputfile\" --preset=\"$preset\" > /dev/null 2>&1" );
 }
 
 ################################################################################
