@@ -102,24 +102,61 @@ sub convertASSToSRT
       open ASS, "<$assfile" or die $!;
       open SRT, ">$srtfile" or die $!;
 
+      # Some variables we'll need for parsing the INI-like ASS script.
+      my @format = ();     # The format of the dialogue
+      my $inEvents = 0;    # If we're in the [Events] section
+      my $foundFormat = 0; # If we've parsed out the format string
+      my $startnum = 0;    # The location of the start time
+      my $endnum = 0;      # The location of the end time
+      my $textnum = 0;     # The location of the dialogue text
+
       # Read the entire ASS file.
       print "Converting SSA/ASS subtitles to SRT format.\n";
       while ( <ASS> )
       {
-         # We're only interested in the SSA dialogue lines for the SRT script.
-         if ( $_ =~ /^Dialogue: (.*)/ )
+         # Grab the interesting part of the script: the [Events] section
+         # as defined in the SSA spec (v4.00+). For reference, see:
+         # http://www.matroska.org/technical/specs/subtitles/ssa.html
+         if ( $_ =~ /^\[Events\]$/ )
          {
-            # Grab the interesting part of the dialogue: the ten comma-separated
-            # fields defined in the SSA spec (v4.00+). For reference, see:
-            # http://www.matroska.org/technical/specs/subtitles/ssa.html
-            my @fields = split( /,/, $1, 10 );
+            $inEvents = 1;
+            next;
+         }
 
-            # Format the start and end times in an SRT format.
-            my $timecode = formatTimeCode( $fields[1], $fields[2] );
+         # We just left the [Events] section.
+         if ( $inEvents and $_ =~ /^\[/ )
+         {
+            $inEvents = 0;
+            next;
+         }
+
+         # Read the Format for the [Events] section, and store the
+         # locations of the fields we're interested in.
+         if ( $inEvents and not $foundFormat and $_ =~ /^Format: (.*)/ )
+         {
+            @format = split( /, /, $1 );
+            for my $fmtnum ( 0 .. $#format )
+            {
+               $startnum = $fmtnum if $format[$fmtnum] eq "Start";
+               $endnum = $fmtnum if $format[$fmtnum] eq "End";
+               $textnum = $fmtnum if $format[$fmtnum] eq "Text";
+            }
+            $foundFormat = 1;
+         }
+
+         # We've looking for a valid line of dialogue.
+         if ( $inEvents and $foundFormat and $_ =~ /^Dialogue: (.*)/ )
+         {
+            # Split the line of dialog up according to the format.
+            my @fields = split( /,/, $1, @format );
 
             # Clean-up the subtitle text for SRT. Skip it if it turns out empty.
-            my $text = cleanSubText( $fields[9] );
+            my $text = cleanSubText( $fields[$textnum] );
             next if $text eq "";
+
+            # Format the start and end times in an SRT format.
+            my $timecode = formatTimeCode( $fields[$startnum],
+                                           $fields[$endnum] );
 
             # Store the text in the hash, using the timecode as the key. If
             # there is a duplicate timecode, we'll append on the next line.
