@@ -92,8 +92,6 @@ sub convertASSToSRT
    # Only operate on ASS subtitle files.
    if ( $assfile =~ /\.ass$/ )
    {
-      print "Converting SSA/ASS subtitles to SRT format.\n";
-
       # Create a temporary file name for the SRT script.
       $srtfile = tmpnam() . ".srt";
 
@@ -105,6 +103,7 @@ sub convertASSToSRT
       open SRT, ">$srtfile" or die $!;
 
       # Read the entire ASS file.
+      print "Converting SSA/ASS subtitles to SRT format.\n";
       while ( <ASS> )
       {
          # We're only interested in the SSA dialogue lines for the SRT script.
@@ -152,7 +151,7 @@ sub muxSubtitles
 {
    my ($inputfile, $srtfile) = @_;
    print "Muxing subtitles into $inputfile.\n";
-   system( "SublerCLI -i \"$inputfile\" -s \"$srtfile\"" );
+   system( "SublerCLI -i \"$inputfile\" -s \"$srtfile\" > /dev/null" );
 }
 
 ################################################################################
@@ -165,7 +164,7 @@ sub convertVideo
    my ($inputfile, $outputfile, $preset) = @_;
 
    # Handbrake likes to put a lot of junk out to STDERR. Do not want.
-   print "Converting $inputfile to $outputfile.\n";
+   print "Converting $inputfile to $outputfile using \"$preset\" preset.\n";
    system( "HandbrakeCLI -i \"$inputfile\" -o \"$outputfile\" --preset=\"$preset\" > /dev/null 2>&1" );
 }
 
