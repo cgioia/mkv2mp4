@@ -193,7 +193,7 @@ sub cleanSubText
 
    foreach ( $text )
    {
-      s/\{[^\}]*}//g; # Remove the codes (everything inside {}'s)
+      s/\{[^\}]*\}//g; # Remove the codes (everything inside {}'s)
       s/\\[Nn]/\n/g;  # Add newlines where called for in the script
    }
 
