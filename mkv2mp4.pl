@@ -23,7 +23,7 @@ foreach ( @ARGV )
 
    # Use HandbrakeCLI to convert the MKV to MP4 using the AppleTV preset.
    my $mp4file = "$path$name.m4v";
-   convertVideo( $mkvfile, $mp4file, "Apple Tv 2" );
+   convertVideo( $mkvfile, $mp4file, "AppleTV" );
    unless ( -e $mp4file )
    {
       print STDERR "Unable to convert $mkvfile!\n";
@@ -202,8 +202,7 @@ sub convertVideo
 
    # Handbrake likes to put a lot of junk out to STDERR. Do not want.
    print "Converting $inputfile to $outputfile using \"$preset\" preset.\n";
-   #system( "HandbrakeCLI-nightly -i \"$inputfile\" -o \"$outputfile\" --preset=\"$preset\" > /dev/null 2>&1" );
-   system( "HandbrakeCLI-nightly -i \"$inputfile\" -o \"$outputfile\" --preset=\"$preset\"" );
+   system( "HandbrakeCLI -i \"$inputfile\" -o \"$outputfile\" --preset=\"$preset\" > /dev/null 2>&1" );
 }
 
 ################################################################################
