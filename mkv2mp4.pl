@@ -24,16 +24,12 @@ foreach ( @ARGV )
    # Use HandbrakeCLI to convert the MKV to MP4 using the AppleTV preset.
    my $mp4file = "$path$name.m4v";
    convertVideo( $mkvfile, $mp4file, "AppleTV" );
-   unless ( -e $mp4file )
-   {
-      print STDERR "Unable to convert $mkvfile!\n";
-      next;
-   }
+   next unless -e $mp4file;
 
    # If the Matroska video container has a subtitle track,
    # extract it and mux it into the converted MP4 file.
    my $subfile = extractSubtitles( $mkvfile );
-   unless ( defined $subfile and -e $subfile ) { next; }
+   next unless defined $subfile and -e $subfile;
    muxSubtitles( $mp4file, $subfile );
    unlink( $subfile );
 }
@@ -95,20 +91,18 @@ sub convertASSToSRT
       # Create a temporary file name for the SRT script.
       $srtfile = tmpnam() . ".srt";
 
-      # Define a hash to hold the SRT script while we're reading the ASS file.
-      my %srtlines = ();
-
       # Open the ASS and SRT files for reading and writing, respectively.
       open ASS, "<$assfile" or die $!;
       open SRT, ">$srtfile" or die $!;
 
       # Some variables we'll need for parsing the INI-like ASS script.
-      my @format = ();     # The format of the dialogue
-      my $inEvents = 0;    # If we're in the [Events] section
-      my $foundFormat = 0; # If we've parsed out the format string
-      my $startnum = 0;    # The location of the start time
-      my $endnum = 0;      # The location of the end time
-      my $textnum = 0;     # The location of the dialogue text
+      my %srtlines    = (); # Hash to hold the SRT script as it's being parsed
+      my @format      = (); # The format of the dialogue
+      my $inEvents    = 0;  # If we're in the [Events] section
+      my $foundFormat = 0;  # If we've parsed out the format string
+      my $startnum    = 0;  # The location of the start time
+      my $endnum      = 0;  # The location of the end time
+      my $textnum     = 0;  # The location of the dialogue text
 
       # Read the entire ASS file.
       print "Converting SSA/ASS subtitles to SRT format.\n";
@@ -117,18 +111,10 @@ sub convertASSToSRT
          # Grab the interesting part of the script: the [Events] section
          # as defined in the SSA spec (v4.00+). For reference, see:
          # http://www.matroska.org/technical/specs/subtitles/ssa.html
-         if ( $_ =~ /^\[Events\]$/ )
-         {
-            $inEvents = 1;
-            next;
-         }
+         if ( $_ =~ /^\[Events\]$/ ) { $inEvents = 1; next; }
 
          # We just left the [Events] section.
-         if ( $inEvents and $_ =~ /^\[/ )
-         {
-            $inEvents = 0;
-            next;
-         }
+         if ( $inEvents and $_ =~ /^\[/ ) { $inEvents = 0; next; }
 
          # Read the Format for the [Events] section, and store the
          # locations of the fields we're interested in.
