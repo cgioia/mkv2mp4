@@ -21,9 +21,10 @@ foreach ( @ARGV )
    my ($name, $path, $suffix) = fileparse( $mkvfile, qr/\.[^.]*/ );
    next unless $suffix eq ".mkv";
 
-   # Use HandbrakeCLI to convert the MKV to MP4 using the AppleTV preset.
+   # Use HandbrakeCLI to convert the MKV to MP4 using the iPad preset.
+   # @TODO the preset to use should probably be user-configurable...
    my $mp4file = "$path$name.m4v";
-   convertVideo( $mkvfile, $mp4file, "AppleTV" );
+   convertVideo( $mkvfile, $mp4file, "iPad" ) unless -e $mp4file;
    next unless -e $mp4file;
 
    # If the Matroska video container has a subtitle track,
@@ -187,6 +188,7 @@ sub convertVideo
    my ($inputfile, $outputfile, $preset) = @_;
 
    # Handbrake likes to put a lot of junk out to STDERR. Do not want.
+   # @TODO verbosity should also be user-configurable...
    print "Converting $inputfile to $outputfile using \"$preset\" preset.\n";
    system( "HandbrakeCLI -i \"$inputfile\" -o \"$outputfile\" --preset=\"$preset\" > /dev/null 2>&1" );
 }
