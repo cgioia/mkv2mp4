@@ -167,15 +167,15 @@ sub convertASSToSRT
 }
 
 ################################################################################
-# Subroutine:  muxSubtitles( $inputfile, $srtfile )
+# Subroutine:  muxSubtitles( $mp4file, $srtfile )
 # Description: Mux an SRT subtitle script into the given MP4 file.
 # Return:      nothing
 ################################################################################
 sub muxSubtitles
 {
-   my ($inputfile, $srtfile) = @_;
-   print "Muxing subtitles into $inputfile.\n";
-   system( "SublerCLI -i \"$inputfile\" -s \"$srtfile\" > /dev/null" );
+   my ($mp4file, $srtfile) = @_;
+   print "Muxing subtitles into $mp4file.\n";
+   system( "SublerCLI -o \"$mp4file\" -i \"$srtfile\" > /dev/null" );
 }
 
 ################################################################################
