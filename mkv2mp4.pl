@@ -21,10 +21,10 @@ foreach ( @ARGV )
    my ($name, $path, $suffix) = fileparse( $mkvfile, qr/\.[^.]*/ );
    next unless $suffix eq ".mkv";
 
-   # Use HandbrakeCLI to convert the MKV to MP4 using the iPad preset.
+   # Use HandbrakeCLI to convert the MKV to MP4 using the AppleTV 2 preset.
    # @TODO the preset to use should probably be user-configurable...
    my $mp4file = "$path$name.m4v";
-   convertVideo( $mkvfile, $mp4file, "iPad" ) unless -e $mp4file;
+   convertVideo( $mkvfile, $mp4file, "AppleTV 2" ) unless -e $mp4file;
    next unless -e $mp4file;
 
    # If the Matroska video container has a subtitle track,
@@ -125,8 +125,8 @@ sub convertASSToSRT
             for my $fmtnum ( 0 .. $#format )
             {
                $startnum = $fmtnum if $format[$fmtnum] eq "Start";
-               $endnum = $fmtnum if $format[$fmtnum] eq "End";
-               $textnum = $fmtnum if $format[$fmtnum] eq "Text";
+               $endnum   = $fmtnum if $format[$fmtnum] eq "End";
+               $textnum  = $fmtnum if $format[$fmtnum] eq "Text";
             }
             $foundFormat = 1;
          }
@@ -202,7 +202,7 @@ sub convertVideo
 sub formatTimeCode
 {
    my $start = sprintf( "%02d:%02d:%06.3f", split( /:/, $_[0], 3 ) );
-   my $end = sprintf( "%02d:%02d:%06.3f", split( /:/, $_[1], 3 ) );
+   my $end   = sprintf( "%02d:%02d:%06.3f", split( /:/, $_[1], 3 ) );
    return "$start --> $end";
 }
 
@@ -219,7 +219,7 @@ sub cleanSubText
    foreach ( $text )
    {
       s/\{[^\}]*\}//g; # Remove the codes (everything inside {}'s)
-      s/\\[Nn]/\n/g;  # Add newlines where called for in the script
+      s/\\[Nn]/\n/g;   # Add newlines where called for in the script
    }
 
    return $text;
