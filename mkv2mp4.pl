@@ -174,7 +174,7 @@ sub muxSubtitles
 {
    my ($mp4file, $srtfile) = @_;
    print "Muxing subtitles into $mp4file.\n";
-   system( "SublerCLI -o \"$mp4file\" -i \"$srtfile\" > /dev/null" );
+   system( "SublerCLI -o \"$mp4file\" -i \"$srtfile\" -r > /dev/null" );
 }
 
 ################################################################################
@@ -192,7 +192,7 @@ sub convertVideo
    my $popt = "--maxWidth 1280 --loose-anamorphic";
    my $io = "-i \"$inputfile\" -o \"$outputfile\" 2> /dev/null";
 
-   print "Converting $inputfile...\n";
+   print "Converting $inputfile.\n";
    system( "HandbrakeCLI $dopt $vopt $aopt $popt $io" );
    print "\n";
 }
