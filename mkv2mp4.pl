@@ -113,7 +113,7 @@ sub convertASSToSRT
          # http://www.matroska.org/technical/specs/subtitles/ssa.html
          if ( $_ =~ /^\[Events\]$/ ) { $inEvents = 1; next; }
 
-         # We just left the [Events] section.
+         # Watch to see when we leave the [Events] section.
          if ( $inEvents and $_ =~ /^\[/ ) { $inEvents = 0; next; }
 
          # Read the Format for the [Events] section, and store the
@@ -186,7 +186,7 @@ sub convertVideo
 {
    my ($inputfile, $outputfile) = @_;
 
-   my $dopt = "--format mp4 --large-file --markers";
+   my $dopt = "--format mp4 --markers --large-file";
    my $vopt = "--encoder x264 --quality 20.0 --rate 29.97 --pfr";
    my $aopt = "--aencoder faac --ab 160";
    my $popt = "--maxWidth 1280 --loose-anamorphic";
