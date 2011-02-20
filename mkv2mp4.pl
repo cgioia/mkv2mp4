@@ -222,8 +222,14 @@ sub cleanSubText
 
    foreach ( $text )
    {
-      s/\{[^\}]*\}//g; # Remove the codes (everything inside {}'s)
-      s/\\[Nn]/\n/g;   # Add newlines where called for in the script
+      s/\{\\b1\}/<b>/g;   # Style override code to begin bold
+      s/\{\\b0\}/<\/b>/g; # Style override code to end bold
+      s/\{\\i1\}/<i>/g;   # Style override code to begin italics
+      s/\{\\i0\}/<\/i>/g; # Style override code to end italics
+      s/\{\\u1\}/<u>/g;   # Style override code to begin underline
+      s/\{\\u0\}/<\/u>/g; # Style override code to end underline
+      s/\{[^\}]*\}//g;    # Remove the other codes (everything inside {}'s)
+      s/\\[Nn]/\n/g;      # Add newlines where called for in the script
    }
 
    return $text;
