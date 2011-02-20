@@ -146,6 +146,10 @@ sub convertASSToSRT
 
             # Store the text in the hash, using the timecode as the key. If
             # there is a duplicate timecode, we'll append on the next line.
+            # Skip the line if it already exists (e.g., duplicated in the ASS
+            # script for styling purposes).
+            my $curline = $srtlines{$timecode};
+            next if defined $curline and $curline =~ /$text/;
             $srtlines{$timecode} .= $text . "\n";
          }
       }
