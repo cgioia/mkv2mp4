@@ -5,8 +5,9 @@
 ################################################################################
 use strict;
 use warnings;
-use POSIX;
-use File::Basename;
+use POSIX qw(setlocale LC_NUMERIC);
+use File::Basename qw(fileparse);
+use File::Temp qw(tmpnam);
 
 # Set our locale to Canada (French) so the decimal separator will be a comma.
 setlocale( LC_NUMERIC, "fr_CA" );
