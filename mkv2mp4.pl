@@ -227,14 +227,18 @@ sub cleanSubText
 
    foreach ( $text )
    {
-      s/\{\\b1\}/<b>/g;   # Style override code to begin bold
-      s/\{\\b0\}/<\/b>/g; # Style override code to end bold
-      s/\{\\i1\}/<i>/g;   # Style override code to begin italics
-      s/\{\\i0\}/<\/i>/g; # Style override code to end italics
-      s/\{\\u1\}/<u>/g;   # Style override code to begin underline
-      s/\{\\u0\}/<\/u>/g; # Style override code to end underline
-      s/\{[^\}]*\}//g;    # Remove the other codes (everything inside {}'s)
-      s/\\[Nn]/\n/g;      # Add newlines where called for in the script
+      s/\{\\b1\}/<b>/g;         # Style override code to begin bold
+      s/\{\\b0\}/<\/b>/g;       # Style override code to end bold
+      s/\{\\i1\}/<i>/g;         # Style override code to begin italics
+      s/\{\\i0\}/<\/i>/g;       # Style override code to end italics
+      s/\{\\u1\}/<u>/g;         # Style override code to begin underline
+      s/\{\\u0\}/<\/u>/g;       # Style override code to end underline
+      s/\{[^\}]*\}//g;          # Remove the other codes
+      s/\s*(?:\\[Nn])+\s*/\n/g; # Add newlines (only 1 if more) and trim spaces
+      s/\\[Tt]/        /g;      # Add eight spaces for a tab character
+      s/\\[^NnTt]//g;           # Remove all other escape sequences
+      s/^\s+//g;                # Remove leading whitespace
+      s/\s+$//g;                # Remove trailing whitespace
    }
 
    return $text;
