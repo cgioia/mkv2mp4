@@ -198,7 +198,7 @@ sub convertVideo
    my $io = "-i \"$inputfile\" -o \"$outputfile\" 2> /dev/null";
 
    print "Converting $inputfile.\n";
-   system( "HandbrakeCLI $dopt $vopt $aopt $popt $io" );
+   system( "HandBrakeCLI $dopt $vopt $aopt $popt $io" );
    print "\n";
 }
 
