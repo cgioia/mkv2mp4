@@ -112,14 +112,14 @@ sub convertASSToSRT
          # Grab the interesting part of the script: the [Events] section
          # as defined in the SSA spec (v4.00+). For reference, see:
          # http://www.matroska.org/technical/specs/subtitles/ssa.html
-         if ( $_ =~ /^\[Events\]$/ ) { $inEvents = 1; next; }
+         if ( /^\[Events\]$/ ) { $inEvents = 1; next; }
 
          # Watch to see when we leave the [Events] section.
-         if ( $inEvents and $_ =~ /^\[/ ) { $inEvents = 0; next; }
+         if ( $inEvents and /^\[/ ) { $inEvents = 0; next; }
 
          # Read the Format for the [Events] section, and store the
          # locations of the fields we're interested in.
-         if ( $inEvents and not $foundFormat and $_ =~ /^Format: (.*)/ )
+         if ( $inEvents and not $foundFormat and /^Format: (.*)/ )
          {
             @format = split( /, /, $1 );
             for my $fmtnum ( 0 .. $#format )
@@ -132,7 +132,7 @@ sub convertASSToSRT
          }
 
          # We've looking for a valid line of dialogue.
-         if ( $inEvents and $foundFormat and $_ =~ /^Dialogue: (.*)/ )
+         if ( $inEvents and $foundFormat and /^Dialogue: (.*)/ )
          {
             # Split the line of dialog up according to the format.
             my @fields = split( /,/, $1, @format );
