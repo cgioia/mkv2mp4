@@ -1,6 +1,6 @@
-This is a command-line utility to convert (using HandBrake) Matroska video (MKV) to MP4 (M4V), ostensibly for viewing on an AppleTV or an Apple iPad.
+This is a command-line utility to convert a video in a Matroska video container (MKV) to H.264 in an MP4 container (M4V), ostensibly for viewing on an AppleTV or an Apple iPad.
 
-The real magic comes in the form of extracting an SSA/ASS subtitle track from the Matroska container, converting it to a format accepted by MP4 (SRT-style subtitles), and muxing it in to the newly converted MP4 file.
+The real magic comes in the form of extracting an [SSA/ASS](http://www.matroska.org/technical/specs/subtitles/ssa.html) subtitle track from the Matroska container, converting it to a format accepted by MP4 ([SRT-style subtitles](http://www.matroska.org/technical/specs/subtitles/srt.html)), and muxing it in to the newly converted MP4 file.
 
 While technically this script will run in any Perl environment, reliance on SublerCLI (for subtitle muxing) currently makes it only usable on Mac OS X.
 
