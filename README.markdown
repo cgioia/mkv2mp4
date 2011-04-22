@@ -1,6 +1,6 @@
 mkv2mp4
 =======
-Chad Gioia <cgioia@gmail.com>
+Chad Gioia \<cgioia@gmail.com\>
 
 Description
 -----------
@@ -12,10 +12,10 @@ While technically this script will run in any Perl environment, reliance on Subl
 
 Usage
 -----
-mkv2mp4.pl <mkvfile>...
+mkv2mp4.pl \<mkvfile\>...
 
 Prerequisites
 -------------
-HandBrakeCLI - http://handbrake.fr/
-SublerCLI - http://code.google.com/p/subler/
-MKVToolnix - http://www.bunkus.org/videotools/mkvtoolnix/
+[HandBrakeCLI](http://handbrake.fr/)
+[SublerCLI](http://code.google.com/p/subler/)
+[MKVToolnix](http://www.bunkus.org/videotools/mkvtoolnix/)
