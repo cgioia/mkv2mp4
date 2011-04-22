@@ -1,7 +1,3 @@
-mkv2mp4
-=======
-Chad Gioia \<cgioia@gmail.com\>
-
 Description
 -----------
 This is a command-line utility to convert (using HandBrake) Matroska video (MKV) to MP4 (M4V), ostensibly for viewing on an AppleTV or an Apple iPad.
@@ -16,6 +12,6 @@ mkv2mp4.pl \<mkvfile\>...
 
 Prerequisites
 -------------
-[HandBrakeCLI](http://handbrake.fr/)
-[SublerCLI](http://code.google.com/p/subler/)
+[HandBrakeCLI](http://handbrake.fr/)  
+[SublerCLI](http://code.google.com/p/subler/)  
 [MKVToolnix](http://www.bunkus.org/videotools/mkvtoolnix/)
