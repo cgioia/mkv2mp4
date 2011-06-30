@@ -6,7 +6,7 @@ While technically this script will run in any Perl environment, reliance on Subl
 
 Usage
 -----
-   mkv2mp4.pl <mkvfile>...
+	mkv2mp4.pl <mkvfile>...
 
 Dependencies
 ------------
