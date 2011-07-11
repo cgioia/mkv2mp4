@@ -150,7 +150,7 @@ sub convertASSToSRT
             # Skip the line if it already exists (e.g., duplicated in the ASS
             # script for styling purposes).
             my $curline = $srtlines{$timecode};
-            next if defined $curline and $curline eq "$text\n";
+            next if defined $curline and $curline =~ /$text/;
             $srtlines{$timecode} .= $text . "\n";
          }
       }
