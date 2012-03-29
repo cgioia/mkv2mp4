@@ -8,6 +8,7 @@ use warnings;
 use POSIX qw(setlocale LC_NUMERIC);
 use File::Basename qw(fileparse);
 use File::Temp qw(tmpnam);
+use feature "switch";
 
 # Set our locale to Canada (French) so the decimal separator will be a comma.
 setlocale( LC_NUMERIC, "fr_CA" );
@@ -22,14 +23,13 @@ foreach ( @ARGV )
    my ($name, $path, $suffix) = fileparse( $mkvfile, qr/\.[^.]*/ );
    next unless $suffix eq ".mkv";
 
-   # Use HandbrakeCLI to convert the MKV to MP4.
-   my $mp4file = "$path$name.m4v";
-   convertVideo( $mkvfile, $mp4file ) unless -e $mp4file;
-   next unless -e $mp4file;
+   my ($videofile, $audiofile, $subfile) = extractTracks( $mkvfile );
 
-   # If the Matroska video container has a subtitle track,
-   # extract it and mux it into the converted MP4 file.
-   my $subfile = extractSubtitles( $mkvfile );
+   my $mp4file = "$path$name.m4v";
+   system( "SublerCLI -i \"$videofile\" -o \"$mp4file\" > /dev/null" );
+   system( "SublerCLI -i \"$audiofile\" -o \"$mp4file\" > /dev/null" );
+   unlink( $videofile, $audiofile );
+
    next unless defined $subfile and -e $subfile;
    muxSubtitles( $mp4file, $subfile );
    unlink( $subfile );
@@ -166,18 +166,24 @@ sub convertASSToSRT
       close ASS;
       close SRT;
    }
+   elsif ( $assfile =~ /\.srt$/ )
+   {
+      # Nothing to do, just use the original file.
+      $srtfile = $assfile;
+   }
 
    return $srtfile;
 }
 
 ################################################################################
-# Subroutine:  muxSubtitles( $mp4file, $srtfile )
-# Description: Mux an SRT subtitle script into the given MP4 file.
+# Subroutine:  muxSubtitles( $mp4file, $subfile )
+# Description: Mux a subtitle script into the given MP4 file.
 # Return:      nothing
 ################################################################################
 sub muxSubtitles
 {
-   my ($mp4file, $srtfile) = @_;
+   my ($mp4file, $subfile) = @_;
+   my $srtfile = convertASSToSRT( $subfile );
    print "Muxing subtitles into $mp4file.\n";
    system( "SublerCLI -o \"$mp4file\" -i \"$srtfile\" -r > /dev/null" );
 }
@@ -187,19 +193,82 @@ sub muxSubtitles
 # Description: Convert the given input video file.
 # Return:      nothing
 ################################################################################
-sub convertVideo
+# sub convertVideo
+# {
+#    my ($inputfile, $outputfile) = @_;
+
+#    my $dopt = "--format mp4 --markers --large-file";
+#    my $vopt = "--encoder x264 --quality 20.0 --rate 29.97 --pfr";
+#    my $aopt = "--aencoder faac --ab 160";
+#    my $popt = "--maxWidth 1920 --loose-anamorphic";
+#    my $io = "-i \"$inputfile\" -o \"$outputfile\" 2> /dev/null";
+
+#    print "Converting $inputfile.\n";
+#    system( "HandBrakeCLI $dopt $vopt $aopt $popt $io" );
+#    print "\n";
+# }
+
+sub extractTracks
 {
-   my ($inputfile, $outputfile) = @_;
+   my $inputfile = shift;
 
-   my $dopt = "--format mp4 --markers --large-file";
-   my $vopt = "--encoder x264 --quality 23.0 --rate 29.97 --pfr";
-   my $aopt = "--aencoder faac --ab 160";
-   my $popt = "--maxWidth 1280 --loose-anamorphic";
-   my $io = "-i \"$inputfile\" -o \"$outputfile\" 2> /dev/null";
+   # Only operate on Matroska video files.
+   if ( $inputfile =~ /\.mkv$/ )
+   {
+      # Declare some variables for use later.
+      my $vt = "";
+      my $at = "";
+      my $st = "";
+      my $vfile = undef;
+      my $afile = undef;
+      my $sfile = undef;
 
-   print "Converting $inputfile.\n";
-   system( "HandBrakeCLI $dopt $vopt $aopt $popt $io" );
-   print "\n";
+      # Get the metadata information from this MKV file.
+      my $info = `mkvmerge --identify "$inputfile"`;
+
+      # Determine track and extension for video.
+      my ($vtid, $vttype) = $info =~ m!Track ID (\d+): video \(([^\)]+)\)!;
+      if ( defined $vtid )
+      {
+         given ($vttype)
+         {
+            $vfile = tmpnam() . ".h264" when /V_MPEG4/;
+            print "Unknown video type: $vttype\n";
+         }
+         $vt = "$vtid:$vfile" if defined $vtid and defined $vfile;
+      }
+
+      # Determine track and extension for audio.
+      my ($atid, $attype) = $info =~ m!Track ID (\d+): audio \(([^\)]+)\)!;
+      if ( defined $attype )
+      {
+         given ($attype)
+         {
+            $afile = tmpnam() . ".aac" when /A_AAC/;
+            $afile = tmpnam() . ".ac3" when /A_AC3/;
+            print "Unknown audio type: $attype\n";
+         }
+         $at = "$atid:$afile" if defined $atid and defined $afile;
+      }
+
+      # Determine track and extension for subtitiles.
+      my ($stid, $sttype) = $info =~ m!Track ID (\d+): subtitles \(([^\)]+)\)!;
+      if ( defined $sttype )
+      {
+         given ($sttype)
+         {
+            $sfile = tmpnam() . ".ass" when /S_TEXT\/ASS/;
+            $sfile = tmpnam() . ".srt" when /S_TEXT\/UTF8/;
+            print "Unknown subtitle type: $sttype\n";
+         }
+         $st = "$stid:$sfile" if defined $stid and defined $sfile;
+      }
+
+      # Extract the tracks from the Matroska container.
+      system( "mkvextract tracks $inputfile $vt $at $st" );
+
+      return ($vfile, $afile, $sfile);
+   }
 }
 
 ################################################################################
