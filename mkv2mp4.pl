@@ -237,6 +237,7 @@ sub cleanSubText
       s/\s*(?:\\[Nn])+\s*/\n/g;       # Add newline and trim spaces
       s/\\[Tt]/        /g;            # Add eight spaces for a tab character
       s/\\[^NnTt]//g;                 # Remove all other escape sequences
+      s/[<>]//g;                      # Remove angle brackets
       s/^\s+//g;                      # Remove leading whitespace
       s/\s+$//g;                      # Remove trailing whitespace
    }
