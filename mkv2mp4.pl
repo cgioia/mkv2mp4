@@ -22,7 +22,7 @@ foreach ( @ARGV )
    my ($name, $path, $suffix) = fileparse( $mkvfile, qr/\.[^.]*/ );
    next unless $suffix eq ".mkv";
 
-   # Use HandbrakeCLI to convert the MKV to MP4.
+   # Convert the MKV to MP4.
    my $mp4file = "$path$name.m4v";
    convertVideo( $mkvfile, $mp4file ) unless -e $mp4file;
    next unless -e $mp4file;
@@ -198,8 +198,13 @@ sub convertVideo
    my $io = "-i \"$inputfile\" -o \"$outputfile\" 2> /dev/null";
 
    print "Converting $inputfile.\n";
-   system( "HandBrakeCLI $dopt $vopt $aopt $popt $io" );
-   print "\n";
+   system( "HandBrakeCLI $dopt $vopt $aopt $popt $io" ); print "\n";
+   # TODO: We probably don't need to run the H.264 video through Handbrake;
+   # we can just copy it to the new container. However, some files are coming
+   # out now with 10-bit color, which can't be decoded by Apple's hardware...
+   # in which case we need to re-encode it anyways. It'd be great if we could
+   # only convert the video when absolutely necessary, and copy it otherwise.
+   # system( "SublerCLI -i \"$inputfile\" -o \"$outputfile\" -O" );
 }
 
 ################################################################################
