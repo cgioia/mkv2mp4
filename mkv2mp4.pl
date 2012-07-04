@@ -192,9 +192,9 @@ sub convertVideo
    my ($inputfile, $outputfile) = @_;
 
    my $dopt = "--format mp4 --markers --large-file";
-   my $vopt = "--encoder x264 --quality 23.0 --rate 29.97 --pfr";
+   my $vopt = "--encoder x264 --quality 20.0 --rate 29.97 --pfr";
    my $aopt = "--aencoder faac --ab 160";
-   my $popt = "--maxWidth 1280 --loose-anamorphic";
+   my $popt = "--maxWidth 1920 --loose-anamorphic";
    my $io = "-i \"$inputfile\" -o \"$outputfile\" 2> /dev/null";
 
    print "Converting $inputfile.\n";
