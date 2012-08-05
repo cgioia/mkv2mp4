@@ -179,7 +179,7 @@ sub muxSubtitles
 {
    my ($mp4file, $srtfile) = @_;
    print "Muxing subtitles into $mp4file.\n";
-   system( "SublerCLI -o \"$mp4file\" -i \"$srtfile\" -r > /dev/null" );
+   system( "SublerCLI -dest \"$mp4file\" -source \"$srtfile\" -remove > /dev/null" );
 }
 
 ################################################################################
@@ -204,7 +204,7 @@ sub convertVideo
    # out now with 10-bit color, which can't be decoded by Apple's hardware...
    # in which case we need to re-encode it anyways. It'd be great if we could
    # only convert the video when absolutely necessary, and copy it otherwise.
-   # system( "SublerCLI -i \"$inputfile\" -o \"$outputfile\" -O" );
+   # system( "SublerCLI -source \"$inputfile\" -dest \"$outputfile\" > /dev/null 2>&1" );
 }
 
 ################################################################################
