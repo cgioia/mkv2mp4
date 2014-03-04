@@ -60,7 +60,7 @@ sub extractSubtitles
          system( "mkvextract tracks \"$mkvfile\" \"$1:$srtfile\" > /dev/null" );
       }
       # SRT track wasn't found, so look for an SSA/ASS track.
-      elsif ( $info =~ /Track ID (\d+): subtitles \(S_TEXT\/ASS\)/ )
+      elsif ( $info =~ /Track ID (\d+): subtitles (\(S_TEXT\/ASS\)|\(SubStationAlpha\))/ )
       {
          # Create a temporary file name for the ASS script and extract.
          my $assfile = tmpnam() . ".ass";
