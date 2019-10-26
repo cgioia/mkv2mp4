@@ -195,16 +195,18 @@ sub convertVideo
    my $vopt = "--encoder x264 --quality 20.0 --rate 29.97 --pfr";
    my $aopt = "--aencoder faac --ab 160";
    my $popt = "--maxWidth 1920 --loose-anamorphic";
+   my $pset = "--preset Devices/Apple\\ 1080p60\\ Surround";
    my $io = "-i \"$inputfile\" -o \"$outputfile\" 2> /dev/null";
 
    print "Converting $inputfile.\n";
-   system( "HandBrakeCLI $dopt $vopt $aopt $popt $io" ); print "\n";
+   # system( "HandBrakeCLI $dopt $vopt $aopt $popt $io" ); print "\n";
+   # system( "HandBrakeCLI $pset $io" ); print "\n";
    # TODO: We probably don't need to run the H.264 video through Handbrake;
    # we can just copy it to the new container. However, some files are coming
    # out now with 10-bit color, which can't be decoded by Apple's hardware...
    # in which case we need to re-encode it anyways. It'd be great if we could
    # only convert the video when absolutely necessary, and copy it otherwise.
-   # system( "SublerCLI -source \"$inputfile\" -dest \"$outputfile\" > /dev/null 2>&1" );
+   system( "SublerCLI -source \"$inputfile\" -dest \"$outputfile\" > /dev/null 2>&1" );
 }
 
 ################################################################################
